@@ -20,7 +20,7 @@ class Model:
     def initialize_weights(self, input_size, output_size = 10):
         """Initialize weights based on weight_init strategy."""
         self.weights = []
-        self.neuron_outputs = [input_size]
+        self.neuron_outputs = [np.zeros(input_size)]
 
         if self.weight_init == 'random':
             prev_layer = input_size
@@ -34,9 +34,7 @@ class Model:
             
     def initialize_biases(self):
         """Initialize biases to zeros."""
-        self.biases = np.zeros(self.num_hidden_layers + 2)
-        
-        
+        self.biases = np.zeros(1, self.num_hidden_layers + 2)
 
     def activation_function(self, x):
         """Apply activation function."""
@@ -61,16 +59,27 @@ class Model:
 
 
     def forward(self, x):
+        self.neuron_outputs[0] = x
+        for i in range(self.num_hidden_layers):
+            self.neuron_outputs[i + 1] = self.activation_function(np.dot(self.weights[i].T, self.neuron_outputs[i]) + self.bias[i])
         """Forward pass through the network."""
-        
+        self.neuron_outputs[-1] = self.activation_function(np.dot(self.weights[-1].T, self.neuron_outputs[-2]) + self.bias[-1])
+        self.neuron_outputs[-1] = np.exp(self.neuron_outputs[-1]) / np.sum(np.exp(self.neuron_outputs[-1])) # Softmax
         pass  # Implement forward propagation
 
-    def backward(self, loss):
-        """Backward pass for weight updates."""
-        pass  # Implement backpropagation
-
+    def backward(self, true_output):
+        
+        self.error = np.zeros_like(self.neuron_outputs)
+        self.error[-1] = -(true_output - self.neuron_outputs[-1])
+        for i in range(self.error.shape[0] - 1, 0, -1) :
+            self.error[i] = np.dot(self.weights[i], self.error(i + 1)) * self.activation_derivative(self.neuron_outputs[i])
+        
     def update_weights(self):
         """Apply optimization algorithm to update weights."""
+        if self.optimizer == 'SGD' :
+            for i in range(self.weight.shape[0]) :
+                self.weights[i] = self.weights[i] - self.learning_rate * np.dot(self.error[i + 1].T, self.neuron_outputs[i])
+                self.biases[i] = self.biases[i] - self.learning_rate * self.error[i + 1]
         pass  # Implement SGD, Momentum, Nesterov, RMSProp, Adam, Nadam
 
     def train(self, X, y, epochs, batch_size):
