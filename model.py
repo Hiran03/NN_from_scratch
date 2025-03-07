@@ -32,10 +32,14 @@ class Model:
             self.neuron_outputs.append(np.zeros(output_size))
             self.weights = np.array(self.weights)
             
-    def initialize_biases(self):
+    def initialize_biases(self, output_size = 10):
         """Initialize biases to zeros."""
-        self.biases = np.zeros(1, self.num_hidden_layers + 2)
-
+        self.biases = []
+        for i in range(self.num_hidden_layers):
+            self.biases.append(np.zeros(1, self.hidden_layer_size[i]))
+        self.biases.append(np.zeros(1, output_size))
+        self.biases = np.array(self.biases)
+        
     def activation_function(self, x):
         """Apply activation function."""
         if self.activation == 'sigmoid':
@@ -45,7 +49,6 @@ class Model:
         if self.activation == 'relu':
             return np.maximum(0,x)
 
-        
     def activation_derivative(self, x):
         """Compute the derivative for backpropagation."""
         if self.activation == "sigmoid":
@@ -80,12 +83,24 @@ class Model:
             for i in range(self.weight.shape[0]) :
                 self.weights[i] = self.weights[i] - self.learning_rate * np.dot(self.error[i + 1].T, self.neuron_outputs[i])
                 self.biases[i] = self.biases[i] - self.learning_rate * self.error[i + 1]
-        pass  # Implement SGD, Momentum, Nesterov, RMSProp, Adam, Nadam
+                
+        # Implement SGD, Momentum, Nesterov, RMSProp, Adam, Nadam
 
     def train(self, X, y, epochs, batch_size):
         """Train the model."""
-        pass  # Implement training loop with batches
+        self.initialize_weights(X.shape[1], y.shape[1])
+        self.initialize_biases(y.shape[1])
+        
+        for epoch in epochs:
+            for start_index in range(0, X.shape[0], batch_size) :
+                X_batch = X[start_index: start_index + batch_size:]
+                y_batch = y[start_index: start_index + batch_size:]
+                self.forward(X_batch)
+                self.backward(y_batch)
+                self.update_weights
+                
 
     def predict(self, X):
         """Make predictions on new data."""
-        pass  # Implement inference
+        self.forward(X)
+        return self.neuron_outputs[-1]
