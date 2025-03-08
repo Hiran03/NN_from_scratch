@@ -16,17 +16,18 @@ class Model:
     def initialize_weights(self, input_size, output_size = 10):
         """Initialize weights based on weight_init strategy."""
         self.weights = []
-        self.neuron_outputs = [np.zeros(input_size)]
+        self.neuron_outputs = [np.zeros((1,input_size))]
         self.dw = []
         self.error = []
         if self.weight_init == 'random':
             prev_layer = input_size
             for i in range(self.num_hidden_layers):
                 self.weights.append(np.random.rand(prev_layer, self.hidden_layer_size[i]))  # Uniform distribution from zero to one
-                self.neuron_outputs.append(np.zeros(self.hidden_layer_size[i]))
+                self.neuron_outputs.append(np.zeros((1,self.hidden_layer_size[i])))
+                self.error.append(np.zeros((1,self.hidden_layer_size[i])))
                 prev_layer = self.hidden_layer_size[i]
             self.weights.append(np.random.rand(prev_layer, output_size))
-            self.neuron_outputs.append(np.zeros(output_size))
+            self.neuron_outputs.append(np.zeros((1,output_size)))
             self.error.append(np.zeros(output_size))
             self.dw.append(np.zeros_like(self.weights[-1]))
             
@@ -100,7 +101,25 @@ class Model:
         """Train the model."""
         self.initialize_weights(X.shape[1], y.shape[1])
         self.initialize_biases(y.shape[1])
-        
+        print("Weight matrices")
+        for i in range(len(self.weights)) :
+            print(self.weights[i].shape, end=" ")
+            
+        print("")
+        print("Biases matrices")
+        for i in range(len(self.biases)) :
+            print(self.biases[i].shape, end=" ")
+            
+        print("")
+        print("Neuron Outputs")
+        for i in range(len(self.neuron_outputs)) :
+            print(self.neuron_outputs[i].shape, end=" ")
+            
+        print("")
+        print("Errors")
+        for i in range(len(self.error)) :
+            print(self.error[i].shape, end=" ")
+            
         for epoch in range(epochs):
             print(f"Epoch number: {epoch + 1}\n")
             num_batches = X.shape[0]//batch_size
