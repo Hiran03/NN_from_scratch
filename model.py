@@ -1,7 +1,5 @@
 # This file contains the code for forward pass and backpropogation, activation functions
 import numpy as np
-import random
-
 class Model:
     def __init__(self, num_hidden_layers, hidden_layer_size, weight_decay, learning_rate, optimizer, activation, weight_init):
         # Initialize parameters
@@ -12,10 +10,8 @@ class Model:
         self.optimizer = optimizer
         self.activation = activation
         self.weight_init = weight_init
+        self.training_loss = []
 
-        # Initialize weights & biases
-        self.weights = self.initialize_weights()
-        self.biases = self.initialize_biases()
 
     def initialize_weights(self, input_size, output_size = 10):
         """Initialize weights based on weight_init strategy."""
@@ -103,6 +99,8 @@ class Model:
         self.initialize_biases(y.shape[1])
         
         for epoch in epochs:
+            print(f"Epoch number: {epoch + 1}\n")
+            num_batches = X.shape[0]//batch_size
             for start_index in range(0, X.shape[0], batch_size) :
                 X_batch = X[start_index: start_index + batch_size:]
                 y_batch = y[start_index: start_index + batch_size:]
@@ -117,6 +115,17 @@ class Model:
                     db += dB_curr  # Accumulate bias gradient
 
                 self.update_weights(dw, db)  # Update model parameters
+                
+                # Logging the training loss
+                for X, y in zip(X_batch, y_batch):  
+                    correct_predictions = 0
+                    predicted_index = np.argmax(self.predict(X))  
+                    actual_index = np.argmax(y)
+                    # Check if prediction is correct
+                    if predicted_index == actual_index:
+                        correct_predictions += 1  # Increment the correct prediction count
+                    self.training_loss.append[correct_predictions/batch_size]
+                    print(f"Epoch: {epoch + 1}, batch: {(start_index/batch_size)}/{num_batches} completed....Accuracy: {correct_predictions/batch_size}")
                                 
 
     def predict(self, X):
