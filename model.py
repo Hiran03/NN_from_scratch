@@ -31,6 +31,7 @@ class Model:
             self.weights.append(np.random.rand(prev_layer, output_size))
             self.neuron_outputs.append(np.zeros(output_size))
             self.weights = np.array(self.weights)
+            self.dw = np.zeros_like(self.weights)
             
     def initialize_biases(self, output_size = 10):
         """Initialize biases to zeros."""
@@ -39,6 +40,7 @@ class Model:
             self.biases.append(np.zeros(1, self.hidden_layer_size[i]))
         self.biases.append(np.zeros(1, output_size))
         self.biases = np.array(self.biases)
+        self.db = np.zeros_like(self.biases)
         
     def activation_function(self, x):
         """Apply activation function."""
@@ -76,15 +78,24 @@ class Model:
         self.error[-1] = -(true_output - self.neuron_outputs[-1])
         for i in range(self.error.shape[0] - 1, 0, -1) :
             self.error[i] = np.dot(self.weights[i], self.error(i + 1)) * self.activation_derivative(self.neuron_outputs[i])
+    
+    def gradients(self):
+
+        for i in range(self.weight.shape[0]) :
+            self.dw[i] = np.dot(self.error[i + 1].T, self.neuron_outputs[i])
+            self.db[i] = self.error[i + 1]
+            
+        return self.dw, self.db
         
-    def update_weights(self):
+    def update_weights(self, dw, db):
         """Apply optimization algorithm to update weights."""
+        
         if self.optimizer == 'SGD' :
-            for i in range(self.weight.shape[0]) :
-                self.weights[i] = self.weights[i] - self.learning_rate * np.dot(self.error[i + 1].T, self.neuron_outputs[i])
-                self.biases[i] = self.biases[i] - self.learning_rate * self.error[i + 1]
+            self.weights = self.weights - self.learning_rate * dw
+            self.biases = self.biases - self.learning_rate * db
                 
         # Implement SGD, Momentum, Nesterov, RMSProp, Adam, Nadam
+        
 
     def train(self, X, y, epochs, batch_size):
         """Train the model."""
@@ -95,10 +106,18 @@ class Model:
             for start_index in range(0, X.shape[0], batch_size) :
                 X_batch = X[start_index: start_index + batch_size:]
                 y_batch = y[start_index: start_index + batch_size:]
-                self.forward(X_batch)
-                self.backward(y_batch)
-                self.update_weights
-                
+                dw, db = 0, 0  # Initialize gradients
+
+                for X, y in zip(X_batch, y_batch):  
+                    
+                    self.forward(X)
+                    self.backward(y)
+                    dW_curr, dB_curr = self.gradients()  # Get gradients
+                    dw += dW_curr  # Accumulate weight gradient
+                    db += dB_curr  # Accumulate bias gradient
+
+                self.update_weights(dw, db)  # Update model parameters
+                                
 
     def predict(self, X):
         """Make predictions on new data."""
