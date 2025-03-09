@@ -16,19 +16,20 @@ class Model:
     def initialize_weights(self, input_size, output_size = 10):
         """Initialize weights based on weight_init strategy."""
         self.weights = []
-        self.neuron_outputs = [np.zeros((1,input_size))]
+        self.neuron_outputs = [np.zeros((input_size,1))]
         self.dw = []
-        self.error = []
+        self.error = [np.zeros((input_size,1))]
         if self.weight_init == 'random':
             prev_layer = input_size
             for i in range(self.num_hidden_layers):
                 self.weights.append(np.random.rand(prev_layer, self.hidden_layer_size[i]))  # Uniform distribution from zero to one
-                self.neuron_outputs.append(np.zeros((1,self.hidden_layer_size[i])))
-                self.error.append(np.zeros((1,self.hidden_layer_size[i])))
+                self.neuron_outputs.append(np.zeros((self.hidden_layer_size[i],1)))
+                self.error.append(np.zeros((self.hidden_layer_size[i],1)))
+                self.dw.append(np.zeros_like(self.weights[-1]))
                 prev_layer = self.hidden_layer_size[i]
             self.weights.append(np.random.rand(prev_layer, output_size))
-            self.neuron_outputs.append(np.zeros((1,output_size)))
-            self.error.append(np.zeros(output_size))
+            self.neuron_outputs.append(np.zeros((output_size,1)))
+            self.error.append(np.zeros((output_size,1)))
             self.dw.append(np.zeros_like(self.weights[-1]))
             
     def initialize_biases(self, output_size = 10):
@@ -36,10 +37,10 @@ class Model:
         self.biases = []
         self.db = []
         for i in range(self.num_hidden_layers):
-            self.biases.append(np.zeros((1, self.hidden_layer_size[i])))
-            self.db.append(np.zeros((1, self.hidden_layer_size[i])))
-        self.biases.append(np.zeros((1, output_size)))
-        self.db.append(np.zeros((1, output_size)))
+            self.biases.append(np.zeros((self.hidden_layer_size[i],1)))
+            self.db.append(np.zeros((self.hidden_layer_size[i],1)))
+        self.biases.append(np.zeros((output_size,1)))
+        self.db.append(np.zeros((output_size,1)))
 
         
     def activation_function(self, x):
@@ -74,14 +75,14 @@ class Model:
 
     def backward(self, true_output):
         
-        self.error[-1] = -(true_output - self.neuron_outputs[-1])
-        for i in range(self.error.shape[0] - 1, 0, -1) :
-            self.error[i] = np.dot(self.weights[i], self.error(i + 1)) * self.activation_derivative(self.neuron_outputs[i])
+        self.error[-1] = -true_output + self.neuron_outputs[-1]
+        for i in range(len(self.error) - 2, 0, -1) :
+            self.error[i] = np.dot(self.weights[i], self.error[i + 1]) * self.activation_derivative(self.neuron_outputs[i])
     
     def gradients(self):
 
-        for i in range(self.weight.shape[0]) :
-            self.dw[i] = np.dot(self.error[i + 1].T, self.neuron_outputs[i])
+        for i in range(len(self.weights)) :
+            self.dw[i] = np.dot(self.neuron_outputs[i], self.error[i + 1].T)
             self.db[i] = self.error[i + 1]
             
         return self.dw, self.db
@@ -99,7 +100,9 @@ class Model:
 
     def train(self, X, y, epochs, batch_size):
         """Train the model."""
-        self.initialize_weights(X.shape[1], y.shape[1])
+        X = np.array([x.reshape(-1, 1) for x in X])
+        y = np.array([each_y.reshape(-1, 1) for each_y in y])
+        self.initialize_weights(X[0].shape[0], y.shape[1])
         self.initialize_biases(y.shape[1])
         print("Weight matrices")
         for i in range(len(self.weights)) :
@@ -119,19 +122,22 @@ class Model:
         print("Errors")
         for i in range(len(self.error)) :
             print(self.error[i].shape, end=" ")
-            
+        print("")   
+        
+        num_batches = X.shape[0]//batch_size
+        
         for epoch in range(epochs):
             print(f"Epoch number: {epoch + 1}\n")
-            num_batches = X.shape[0]//batch_size
             for start_index in range(0, X.shape[0], batch_size) :
-                X_batch = X[start_index: start_index + batch_size:]
-                y_batch = y[start_index: start_index + batch_size:]
+                X_batch = X[start_index: start_index + batch_size]
+                y_batch = y[start_index: start_index + batch_size]
                 dw = [np.zeros_like(w) for w in self.weights]  # Create zero arrays matching the shape of gradients
                 db = [np.zeros_like(b) for b in self.biases]
 
-                for X, y in zip(X_batch, y_batch):  
-                    self.forward(X)
-                    dW_curr, dB_curr = self.backward(y)  # Get gradients
+                for X_i, y_i in zip(X_batch, y_batch):  
+                    self.forward(X_i)
+                    self.backward(y_i)
+                    dW_curr, dB_curr = self.gradients()  # Get gradients
 
                     # Accumulate gradients for each layer
                     for i in range(len(dw)):
@@ -140,16 +146,17 @@ class Model:
 
                 self.update_weights(dw, db)  # Update model parameters
                 
+                
                 # Logging the training loss
-                for X, y in zip(X_batch, y_batch):  
-                    correct_predictions = 0
-                    predicted_index = np.argmax(self.predict(X))  
-                    actual_index = np.argmax(y)
+                correct_predictions = 0
+                for X_i, y_i in zip(X_batch, y_batch):  
+                    predicted_index = np.argmax(self.predict(X_i))  
+                    actual_index = np.argmax(y_i)
                     # Check if prediction is correct
                     if predicted_index == actual_index:
                         correct_predictions += 1  # Increment the correct prediction count
-                    self.training_loss.append[correct_predictions/batch_size]
-                    print(f"Epoch: {epoch + 1}, batch: {(start_index/batch_size)}/{num_batches} completed....Accuracy: {correct_predictions/batch_size}")
+                self.training_loss.append(correct_predictions/batch_size)
+                print(f"Epoch: {epoch + 1}, batch: {int(start_index/batch_size)}/{num_batches} completed....Accuracy: {correct_predictions/batch_size}")
                                 
 
     def predict(self, X):
