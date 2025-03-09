@@ -1,7 +1,7 @@
 # This file contains the code for forward pass and backpropogation, activation functions
 import numpy as np
 class Model:
-    def __init__(self, num_hidden_layers, hidden_layer_size, weight_decay, learning_rate, optimizer, activation, weight_init):
+    def __init__(self, num_hidden_layers, hidden_layer_size, weight_decay, learning_rate, optimizer, activation, weight_init, loss):
         # Initialize parameters
         self.num_hidden_layers = num_hidden_layers
         self.hidden_layer_size = hidden_layer_size
@@ -10,6 +10,7 @@ class Model:
         self.optimizer = optimizer
         self.activation = activation
         self.weight_init = weight_init
+        self.loss = loss
         self.training_loss = []
 
 
@@ -19,6 +20,7 @@ class Model:
         self.neuron_outputs = [np.zeros((input_size,1))]
         self.dw = [] 
         self.error = [np.zeros((input_size,1))]
+        
         if self.weight_init == 'random':
             prev_layer = input_size
             for i in range(self.num_hidden_layers):
@@ -28,6 +30,21 @@ class Model:
                 self.dw.append(np.zeros_like(self.weights[-1]))
                 prev_layer = self.hidden_layer_size[i]
             self.weights.append(np.random.randn(prev_layer, output_size)*0.01)
+            self.neuron_outputs.append(np.zeros((output_size,1)))
+            self.error.append(np.zeros((output_size,1)))
+            self.dw.append(np.zeros_like(self.weights[-1])) 
+            
+        if self.weight_init == 'xavier':
+            prev_layer = input_size
+            for i in range(self.num_hidden_layers):
+                std = np.sqrt(2 / (prev_layer + self.hidden_layer_size[i]))  # Xavier Initialization
+                self.weights.append(np.random.normal(0, std, (prev_layer, self.hidden_layer_size[i])))  
+                self.neuron_outputs.append(np.zeros((self.hidden_layer_size[i],1)))
+                self.error.append(np.zeros((self.hidden_layer_size[i],1)))
+                self.dw.append(np.zeros_like(self.weights[-1]))
+                prev_layer = self.hidden_layer_size[i]
+            std = np.sqrt(2 / (prev_layer + output_size))  # Xavier Initialization
+            self.weights.append(np.random.normal(0, std, (prev_layer, output_size)))
             self.neuron_outputs.append(np.zeros((output_size,1)))
             self.error.append(np.zeros((output_size,1)))
             self.dw.append(np.zeros_like(self.weights[-1]))
@@ -46,6 +63,7 @@ class Model:
     def activation_function(self, x):
         """Apply activation function."""
         if self.activation == 'sigmoid':
+            x = np.clip(x, -500, 500) 
             return 1 / (1 + np.exp(-x))
         if self.activation == 'tanh':
             return (np.exp(x) - np.exp(-x)) / (np.exp(x) + np.exp(-x))
@@ -76,7 +94,10 @@ class Model:
 
     def backward(self, true_output):
         
-        self.error[-1] = -true_output + self.neuron_outputs[-1]
+        if self.loss == 'cross-entropy' :
+            self.error[-1] = -true_output + self.neuron_outputs[-1]
+        elif self.loss == 'MSE' :
+            self.error[-1] = -true_output + self.neuron_outputs[-1]
         for i in range(len(self.error) - 2, 0, -1) :
             self.error[i] = np.dot(self.weights[i], self.error[i + 1]) * self.activation_derivative(self.neuron_outputs[i])
     
@@ -104,28 +125,7 @@ class Model:
         X = np.array([x.reshape(-1, 1) for x in X])
         y = np.array([each_y.reshape(-1, 1) for each_y in y])
         self.initialize_weights(X[0].shape[0], y.shape[1])
-        
         self.initialize_biases(y.shape[1])
-        print("Weight matrices")
-        for i in range(len(self.weights)) :
-            print(self.weights[i].shape, end=" ")
-            
-        print("")
-        print("Biases matrices")
-        for i in range(len(self.biases)) :
-            print(self.biases[i].shape, end=" ")
-            
-        print("")
-        print("Neuron Outputs")
-        for i in range(len(self.neuron_outputs)) :
-            print(self.neuron_outputs[i].shape, end=" ")
-            
-        print("")
-        print("Errors")
-        for i in range(len(self.error)) :
-            print(self.error[i].shape, end=" ")
-        print("")   
-        
         num_batches = X.shape[0]//batch_size
         
         for epoch in range(epochs):
@@ -141,6 +141,7 @@ class Model:
                     self.backward(y_i)
                     
                     dW_curr, dB_curr = self.gradients()  # Get gradients
+
 
                     # Accumulate gradients for each layer
                     for i in range(len(dw)):
@@ -159,7 +160,8 @@ class Model:
                     if predicted_index == actual_index:
                         correct_predictions += 1  # Increment the correct prediction count
                 self.training_loss.append(correct_predictions/batch_size)
-                print(f"Epoch: {epoch + 1}, batch: {int(start_index/batch_size)}/{num_batches} completed....Accuracy: {correct_predictions/batch_size}")
+                if (start_index/batch_size % 100 == 0):
+                    print(f"Epoch: {epoch + 1}, batch: {int(start_index/batch_size)}/{num_batches} completed....Accuracy: {correct_predictions/batch_size}")
                 
             
     def predict(self, X):
