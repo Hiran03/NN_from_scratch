@@ -1,7 +1,7 @@
 # This file contains the code for forward pass and backpropogation, activation functions
 import numpy as np
 class Model:
-    def __init__(self, num_hidden_layers, hidden_layer_size, weight_decay, learning_rate, optimizer, activation, weight_init, loss):
+    def __init__(self, num_hidden_layers, hidden_layer_size, weight_decay, learning_rate, optimizer, activation, weight_init, loss, beta = 0.9):
         # Initialize parameters
         self.num_hidden_layers = num_hidden_layers
         self.hidden_layer_size = hidden_layer_size
@@ -12,8 +12,9 @@ class Model:
         self.weight_init = weight_init
         self.loss = loss
         self.training_loss = []
-
-
+        self.beta = beta
+        
+        
     def initialize_weights(self, input_size, output_size = 10):
         """Initialize weights based on weight_init strategy."""
         self.weights = []
@@ -49,6 +50,10 @@ class Model:
             self.error.append(np.zeros((output_size,1)))
             self.dw.append(np.zeros_like(self.weights[-1]))
             
+        self.u_w = []
+        for i in self.weights:
+            self.u_w.append(np.zeros_like(i))
+            
     def initialize_biases(self, output_size = 10):
         """Initialize biases to zeros."""
         self.biases = []
@@ -58,8 +63,10 @@ class Model:
             self.db.append(np.zeros((self.hidden_layer_size[i],1)))
         self.biases.append(np.zeros((output_size,1)))
         self.db.append(np.zeros((output_size,1)))
+        self.u_b = []
+        for i in self.biases:
+            self.u_b.append(np.zeros_like(i))
 
-        
     def activation_function(self, x):
         """Apply activation function."""
         if self.activation == 'sigmoid':
@@ -101,15 +108,16 @@ class Model:
         for i in range(len(self.error) - 2, 0, -1) :
             self.error[i] = np.dot(self.weights[i], self.error[i + 1]) * self.activation_derivative(self.neuron_outputs[i])
     
-    def gradients(self):
-
+    def gradients(self, X, y):
+        self.forward(X)
+        self.backward(y)
         for i in range(len(self.weights)) :
             self.dw[i] = np.dot(self.neuron_outputs[i], self.error[i + 1].T)
             self.db[i] = self.error[i + 1]
             
         return self.dw, self.db
         
-    def update_weights(self, dw, db):
+    def update_weights(self, dw, db, X, y):
         """Apply optimization algorithm to update weights."""
         
         if self.optimizer == 'SGD' :
@@ -117,6 +125,45 @@ class Model:
                 self.weights[i] = self.weights[i] - self.learning_rate * dw[i]
                 self.biases[i] = self.biases[i] - self.learning_rate * db[i]
                 
+        if self.optimizer == 'momentum':
+            for i in range(len(self.weights)) :
+                self.u_w[i] = self.beta*self.u_w[i] + dw[i]
+                self.u_b[i] = self.beta*self.u_b[i] + db[i]
+            
+            for i in range(len(self.weights)): 
+                self.weights[i] = self.weights[i] - self.learning_rate * self.u_w[i]
+                self.biases[i] = self.biases[i] - self.learning_rate * self.u_b[i]
+            
+        if self.optimizer == 'nesterov':
+            
+            # Look first
+            for i in range(len(self.weights)): 
+                self.weights[i] = self.weights[i] - self.beta * self.u_w[i]
+                self.biases[i] = self.biases[i] - self.beta * self.u_b[i]
+                
+            dw = [np.zeros_like(w) for w in self.weights]  # Create zero arrays matching the shape of gradients
+            db = [np.zeros_like(b) for b in self.biases]
+            
+            for X_i, y_i in zip(X, y):  
+                dW_curr, dB_curr = self.gradients(X_i, y_i)  # Get gradients
+                # Accumulate gradients for each layer
+                for i in range(len(dw)):
+                    dw[i] += dW_curr[i]
+                    db[i] += dB_curr[i]
+
+            
+            for i in range(len(self.weights)) :
+                self.u_w[i] = self.beta*self.u_w[i] + dw[i]
+                self.u_b[i] = self.beta*self.u_b[i] + db[i]
+            
+            for i in range(len(self.weights)): 
+                self.weights[i] = self.weights[i] - self.learning_rate * self.u_w[i]
+                self.biases[i] = self.biases[i] - self.learning_rate * self.u_b[i]
+                
+            
+            
+            
+            
         # Implement SGD, Momentum, Nesterov, RMSProp, Adam, Nadam
         
 
@@ -137,10 +184,8 @@ class Model:
                 db = [np.zeros_like(b) for b in self.biases]
                 
                 for X_i, y_i in zip(X_batch, y_batch):  
-                    self.forward(X_i)
-                    self.backward(y_i)
-                    
-                    dW_curr, dB_curr = self.gradients()  # Get gradients
+                                        
+                    dW_curr, dB_curr = self.gradients(X_i, y_i)  # Get gradients
 
 
                     # Accumulate gradients for each layer
@@ -148,7 +193,7 @@ class Model:
                         dw[i] += dW_curr[i]
                         db[i] += dB_curr[i]
                 
-                self.update_weights(dw, db)  # Update model parameters
+                self.update_weights(dw, db, X_batch, y_batch)  # Update model parameters
                 
                 
                 # Logging the training loss
