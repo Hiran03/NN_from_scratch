@@ -66,7 +66,6 @@ class Model:
     def activation_function(self, x):
         """Apply activation function."""
         if self.activation == 'sigmoid':
-            x = np.clip(x, -500, 500) 
             return 1 / (1 + np.exp(-x))
         if self.activation == 'tanh':
             return (np.exp(x) - np.exp(-x)) / (np.exp(x) + np.exp(-x))
@@ -76,12 +75,14 @@ class Model:
     def activation_derivative(self, x):
         """Compute the derivative for backpropagation."""
         if self.activation == "sigmoid":
-            sig = self.activation_function(x)  
-            return sig * (1 - sig)  
+            sig_x = 1 / (1 + np.exp(-x))  # Compute sigmoid directly
+            return sig_x * (1 - sig_x)  
+
         elif self.activation == "relu":
-            return np.where(x > 0, 1, 0)  # ReLU derivative
+            return np.where(x > 0, 1, 0)  
+
         elif self.activation == "tanh":
-            tanh_x = self.activation_function(x) 
+            tanh_x = np.tanh(x)  # Compute tanh directly
             return 1 - tanh_x ** 2  
         
     def fit_transform(self, X):
@@ -103,14 +104,14 @@ class Model:
         for i in range(self.num_hidden_layers):
             self.neuron_outputs[i + 1] = self.activation_function(np.dot(self.weights[i].T, self.neuron_outputs[i]) + self.biases[i])
         
-        self.neuron_outputs[-1] = self.activation_function(np.dot(self.weights[-1].T, self.neuron_outputs[-2]) + self.biases[-1])
+        self.neuron_outputs[-1] = np.dot(self.weights[-1].T, self.neuron_outputs[-2]) + self.biases[-1]
         exps = np.exp(self.neuron_outputs[-1] - np.max(self.neuron_outputs[-1]))  # Subtract max for stability
         self.neuron_outputs[-1] = exps / np.sum(exps)  # Normalize
 
     def backward(self, true_output):
         """Backward pass through the network."""
         if self.loss == 'cross-entropy' :
-            self.error[-1] = -true_output + self.neuron_outputs[-1]
+            self.error[-1] = self.neuron_outputs[-1] - true_output
         elif self.loss == 'MSE' :
             self.error[-1] = -true_output + self.neuron_outputs[-1]
         for i in range(len(self.error) - 2, 0, -1) :
@@ -128,7 +129,6 @@ class Model:
         
     def update_weights(self, dw, db, X, y):
         """Apply optimization algorithm to update weights."""
-        
         if self.optimizer == 'SGD' :
             for i in range(len(self.weights)): 
                 self.weights[i] = self.weights[i] - self.learning_rate * (dw[i] + self.weight_decay * self.weights[i])
@@ -178,12 +178,12 @@ class Model:
             
         if self.optimizer == 'Adam':
             for i in range(len(self.weights)) :
-                self.u_w[i] = (self.beta1*self.u_w[i] + (1-self.beta1)*(dw[i] + self.weight_decay * self.weights[i]))/(1-self.beta1**self.t)
-                self.u_b[i] = (self.beta1*self.u_b[i] + (1-self.beta1)*db[i])/(1-self.beta1**self.t)
+                self.u_w[i] = (self.beta1*self.u_w[i] + (1-self.beta1)*(dw[i] + self.weight_decay * self.weights[i]))/(1 - np.power(self.beta1, self.t) + 1e-8)
+                self.u_b[i] = (self.beta1*self.u_b[i] + (1-self.beta1)*db[i])/(1 - np.power(self.beta1, self.t) + 1e-8)
             
             for i in range(len(self.weights)) :
-                self.v_w[i] = (self.beta2*self.v_w[i] + (1-self.beta2)*dw[i]*dw[i])/(1-self.beta2**self.t)
-                self.v_b[i] = (self.beta2*self.v_b[i] + (1-self.beta2)*db[i]*db[i])/(1-self.beta2**self.t)
+                self.v_w[i] = (self.beta2*self.v_w[i] + (1-self.beta2)*dw[i]*dw[i])/(1 - np.power(self.beta2, self.t) + 1e-8)
+                self.v_b[i] = (self.beta2*self.v_b[i] + (1-self.beta2)*db[i]*db[i])/(1 - np.power(self.beta2, self.t) + 1e-8)
                 
             for i in range(len(self.weights)): 
                 self.weights[i] = self.weights[i] - self.learning_rate * self.u_w[i] / (np.sqrt(self.v_w[i] + np.full_like(self.v_w[i],10e-8)))
@@ -194,7 +194,6 @@ class Model:
     def train(self, X, y, epochs, batch_size):
         """Train the model."""
         X = self.fit_transform(X)
-        y = np.array([each_y.reshape(-1, 1) for each_y in y])
         self.initialize_weights(X[0].shape[0], y.shape[1])
         self.initialize_biases(y.shape[1])
         num_batches = X.shape[0]//batch_size
