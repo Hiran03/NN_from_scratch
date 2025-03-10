@@ -17,7 +17,6 @@ class Model:
         self.beta2 = 0.999
         self.t = 1
         
-        
     def initialize_weights(self, input_size, output_size = 10):
         """Initialize weights based on weight_init strategy."""
         self.weights = []
@@ -53,29 +52,16 @@ class Model:
             self.error.append(np.zeros((output_size,1)))
             self.dw.append(np.zeros_like(self.weights[-1]))
             
-        self.u_w = []
-        for i in self.weights:
-            self.u_w.append(np.zeros_like(i))
-            
-        self.v_w = []
-        for i in self.weights:
-            self.v_w.append(np.zeros_like(i))
+        self.u_w = [np.zeros_like(w) for w in self.weights]
+        self.v_w = [np.zeros_like(w) for w in self.weights]
             
     def initialize_biases(self, output_size = 10):
         """Initialize biases to zeros."""
-        self.biases = []
-        self.db = []
-        for i in range(self.num_hidden_layers):
-            self.biases.append(np.zeros((self.hidden_layer_size[i],1)))
-            self.db.append(np.zeros((self.hidden_layer_size[i],1)))
-        self.biases.append(np.zeros((output_size,1)))
-        self.db.append(np.zeros((output_size,1)))
-        self.u_b = []
-        for i in self.biases:
-            self.u_b.append(np.zeros_like(i))
-        self.v_b = []
-        for i in self.biases:
-            self.v_b.append(np.zeros_like(i))
+        self.biases = [np.zeros((size, 1)) for size in self.hidden_layer_size]
+        self.biases.append(np.zeros((output_size, 1)))
+        self.db = [np.zeros_like(b) for b in self.biases]
+        self.u_b = [np.zeros_like(b) for b in self.biases]
+        self.v_b = [np.zeros_like(b) for b in self.biases]
 
     def activation_function(self, x):
         """Apply activation function."""
@@ -97,20 +83,32 @@ class Model:
         elif self.activation == "tanh":
             tanh_x = self.activation_function(x) 
             return 1 - tanh_x ** 2  
-
-
+        
+    def fit_transform(self, X):
+        """ Normalising X"""
+        X = np.array([x.reshape(-1, 1) for x in X])
+        self.X_u = np.mean(X, axis=0)  # Compute mean for each feature
+        self.X_sigma = np.std(X, axis=0)  # Compute standard deviation for each feature
+        X = np.array([(x - self.X_u) / (self.X_sigma + 1e-8) for x in X ])  # Normalize
+        return X
+        
+    def transform(self, X):
+        """Normalising X"""
+        X = np.array([(x - self.X_u) / (self.X_sigma + 1e-8) for x in X ])
+        return X
+    
     def forward(self, x):
+        """Forward pass through the network."""
         self.neuron_outputs[0] = x
         for i in range(self.num_hidden_layers):
             self.neuron_outputs[i + 1] = self.activation_function(np.dot(self.weights[i].T, self.neuron_outputs[i]) + self.biases[i])
-        """Forward pass through the network."""
+        
         self.neuron_outputs[-1] = self.activation_function(np.dot(self.weights[-1].T, self.neuron_outputs[-2]) + self.biases[-1])
         exps = np.exp(self.neuron_outputs[-1] - np.max(self.neuron_outputs[-1]))  # Subtract max for stability
         self.neuron_outputs[-1] = exps / np.sum(exps)  # Normalize
 
-
     def backward(self, true_output):
-        
+        """Backward pass through the network."""
         if self.loss == 'cross-entropy' :
             self.error[-1] = -true_output + self.neuron_outputs[-1]
         elif self.loss == 'MSE' :
@@ -119,6 +117,7 @@ class Model:
             self.error[i] = np.dot(self.weights[i], self.error[i + 1]) * self.activation_derivative(self.neuron_outputs[i])
     
     def gradients(self, X, y):
+        """Calculate gradients"""
         self.forward(X)
         self.backward(y)
         for i in range(len(self.weights)) :
@@ -132,12 +131,12 @@ class Model:
         
         if self.optimizer == 'SGD' :
             for i in range(len(self.weights)): 
-                self.weights[i] = self.weights[i] - self.learning_rate * dw[i]
+                self.weights[i] = self.weights[i] - self.learning_rate * (dw[i] + self.weight_decay * self.weights[i])
                 self.biases[i] = self.biases[i] - self.learning_rate * db[i]
                 
         if self.optimizer == 'momentum':
             for i in range(len(self.weights)) :
-                self.u_w[i] = self.beta*self.u_w[i] + dw[i]
+                self.u_w[i] = self.beta*self.u_w[i] + (dw[i] + self.weight_decay * self.weights[i])
                 self.u_b[i] = self.beta*self.u_b[i] + db[i]
             
             for i in range(len(self.weights)): 
@@ -145,7 +144,6 @@ class Model:
                 self.biases[i] = self.biases[i] - self.learning_rate * self.u_b[i]
             
         if self.optimizer == 'nesterov':
-            
             # Look first
             for i in range(len(self.weights)): 
                 self.weights[i] = self.weights[i] - self.beta * self.u_w[i]
@@ -158,11 +156,11 @@ class Model:
                 dW_curr, dB_curr = self.gradients(X_i, y_i)  # Get gradients
                 # Accumulate gradients for each layer
                 for i in range(len(dw)):
-                    dw[i] += dW_curr[i]/len(X_i)
-                    db[i] += dB_curr[i]/len(X_i)
+                    dw[i] += dW_curr[i]
+                    db[i] += dB_curr[i]
 
             for i in range(len(self.weights)) :
-                self.u_w[i] = self.beta*self.u_w[i] + dw[i]
+                self.u_w[i] = self.beta*self.u_w[i] + (dw[i] + self.weight_decay * self.weights[i])
                 self.u_b[i] = self.beta*self.u_b[i] + db[i]
             
             for i in range(len(self.weights)): 
@@ -175,12 +173,12 @@ class Model:
                 self.v_b[i] = self.beta*self.v_b[i] + (1-self.beta)*db[i]*db[i]
             
             for i in range(len(self.weights)): 
-                self.weights[i] = self.weights[i] - self.learning_rate * dw[i] / (np.sqrt(self.v_w[i] + np.full_like(self.v_w[i],10e-8)))
+                self.weights[i] = self.weights[i] - self.learning_rate * (dw[i] + self.weight_decay * self.weights[i]) / (np.sqrt(self.v_w[i] + np.full_like(self.v_w[i],10e-8)))
                 self.biases[i] = self.biases[i] - self.learning_rate  * db[i] / (np.sqrt(self.v_b[i] + np.full_like(self.v_b[i],10e-8)))
             
         if self.optimizer == 'Adam':
             for i in range(len(self.weights)) :
-                self.u_w[i] = (self.beta1*self.u_w[i] + (1-self.beta1)*dw[i])/(1-self.beta1**self.t)
+                self.u_w[i] = (self.beta1*self.u_w[i] + (1-self.beta1)*(dw[i] + self.weight_decay * self.weights[i]))/(1-self.beta1**self.t)
                 self.u_b[i] = (self.beta1*self.u_b[i] + (1-self.beta1)*db[i])/(1-self.beta1**self.t)
             
             for i in range(len(self.weights)) :
@@ -192,12 +190,10 @@ class Model:
                 self.biases[i] = self.biases[i] - self.learning_rate  * self.u_b[i] / (np.sqrt(self.v_b[i] + np.full_like(self.v_b[i],10e-8)))
                 
             self.t += 1
-        # Implement SGD, Momentum, Nesterov, RMSProp, Adam, Nadam
         
-
     def train(self, X, y, epochs, batch_size):
         """Train the model."""
-        X = np.array([x.reshape(-1, 1) for x in X])
+        X = self.fit_transform(X)
         y = np.array([each_y.reshape(-1, 1) for each_y in y])
         self.initialize_weights(X[0].shape[0], y.shape[1])
         self.initialize_biases(y.shape[1])
@@ -212,22 +208,19 @@ class Model:
                 db = [np.zeros_like(b) for b in self.biases]
                 
                 for X_i, y_i in zip(X_batch, y_batch):  
-                                        
                     dW_curr, dB_curr = self.gradients(X_i, y_i)  # Get gradients
-
-
                     # Accumulate gradients for each layer
                     for i in range(len(dw)):
-                        dw[i] += dW_curr[i]/batch_size
-                        db[i] += dB_curr[i]/batch_size
+                        dw[i] += dW_curr[i]
+                        db[i] += dB_curr[i]
                 
                 self.update_weights(dw, db, X_batch, y_batch)  # Update model parameters
-                
                 
                 # Logging the training loss
                 correct_predictions = 0
                 for X_i, y_i in zip(X_batch, y_batch):  
-                    predicted_index = np.argmax(self.predict(X_i))  
+                    self.forward(X_i)
+                    predicted_index = np.argmax(self.neuron_outputs[-1])  
                     actual_index = np.argmax(y_i)
                     # Check if prediction is correct
                     if predicted_index == actual_index:
@@ -236,8 +229,11 @@ class Model:
                 if (start_index/batch_size % 100 == 0):
                     print(f"Epoch: {epoch + 1}, batch: {int(start_index/batch_size)}/{num_batches} completed....Accuracy: {correct_predictions/batch_size}")
                 
-            
     def predict(self, X):
         """Make predictions on new data."""
-        self.forward(X)
-        return self.neuron_outputs[-1]
+        X_transformed = self.transform(X)
+        output = []
+        for X_i in X_transformed: 
+            self.forward(X_transformed)
+            output.append(self.neuron_outputs[-1]) 
+        return output
