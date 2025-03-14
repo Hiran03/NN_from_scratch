@@ -95,6 +95,7 @@ class Model:
         
     def transform(self, X):
         """Normalising X"""
+        X = np.array([x.reshape(-1, 1) for x in X])
         X = np.array([(x - self.X_u) / (self.X_sigma + 1e-8) for x in X ])
         return X
     
@@ -233,6 +234,6 @@ class Model:
         X_transformed = self.transform(X)
         output = []
         for X_i in X_transformed: 
-            self.forward(X_transformed)
+            self.forward(X_i)
             output.append(self.neuron_outputs[-1]) 
         return output
