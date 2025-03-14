@@ -1,0 +1,92 @@
+Epoch number: 1
+
+Epoch: 1, batch: 0/937 completed....Accuracy: 0.109375
+Epoch: 1, batch: 100/937 completed....Accuracy: 0.125
+Epoch: 1, batch: 200/937 completed....Accuracy: 0.125
+Epoch: 1, batch: 300/937 completed....Accuracy: 0.09375
+/home/hiran/Desktop/DL/model.py:185: RuntimeWarning: overflow encountered in divide
+  self.v_w[i] = (self.beta2*self.v_w[i] + (1-self.beta2)*dw[i]*dw[i])/(1 - np.power(self.beta2, self.t) + 1e-8)
+/home/hiran/Desktop/DL/model.py:186: RuntimeWarning: overflow encountered in divide
+  self.v_b[i] = (self.beta2*self.v_b[i] + (1-self.beta2)*db[i]*db[i])/(1 - np.power(self.beta2, self.t) + 1e-8)
+Epoch: 1, batch: 400/937 completed....Accuracy: 0.078125
+Epoch: 1, batch: 500/937 completed....Accuracy: 0.078125
+Epoch: 1, batch: 600/937 completed....Accuracy: 0.09375
+Epoch: 1, batch: 700/937 completed....Accuracy: 0.078125
+Epoch: 1, batch: 800/937 completed....Accuracy: 0.078125
+Epoch: 1, batch: 900/937 completed....Accuracy: 0.125
+Epoch number: 1
+
+(60000,)
+(60000, 10, 1)
+Epoch number: 1
+
+(60000,)
+(60000, 10, 1)
+Epoch number: 1
+
+(60000,)
+(60000, 10, 1)
+Epoch number: 1
+
+Epoch: 1, batch: 0/937 completed....Accuracy: 0.078125
+Epoch: 1, batch: 100/937 completed....Accuracy: 0.109375
+Epoch: 1, batch: 200/937 completed....Accuracy: 0.109375
+Epoch: 1, batch: 300/937 completed....Accuracy: 0.078125
+/home/hiran/Desktop/DL/model.py:185: RuntimeWarning: overflow encountered in divide
+  self.initialize_weights(X[0].shape[0], y.shape[1])
+/home/hiran/Desktop/DL/model.py:186: RuntimeWarning: overflow encountered in divide
+  self.initialize_biases(y.shape[1])
+Epoch: 1, batch: 400/937 completed....Accuracy: 0.171875
+Epoch: 1, batch: 500/937 completed....Accuracy: 0.125
+Epoch: 1, batch: 600/937 completed....Accuracy: 0.09375
+Epoch: 1, batch: 700/937 completed....Accuracy: 0.125
+Epoch: 1, batch: 800/937 completed....Accuracy: 0.0625
+Epoch: 1, batch: 900/937 completed....Accuracy: 0.109375
+Epoch number: 1
+
+Epoch: 1, batch: 0/937 completed....Accuracy: 0.046875
+Epoch: 1, batch: 100/937 completed....Accuracy: 0.09375
+Epoch: 1, batch: 200/937 completed....Accuracy: 0.09375
+Epoch: 1, batch: 300/937 completed....Accuracy: 0.140625
+/home/hiran/Desktop/DL/model.py:186: RuntimeWarning: overflow encountered in divide
+  self.initialize_biases(y.shape[1])
+/home/hiran/Desktop/DL/model.py:185: RuntimeWarning: overflow encountered in divide
+  self.initialize_weights(X[0].shape[0], y.shape[1])
+Epoch: 1, batch: 400/937 completed....Accuracy: 0.109375
+Epoch: 1, batch: 500/937 completed....Accuracy: 0.078125
+Epoch: 1, batch: 600/937 completed....Accuracy: 0.09375
+Epoch: 1, batch: 700/937 completed....Accuracy: 0.046875
+Epoch: 1, batch: 800/937 completed....Accuracy: 0.0625
+Epoch: 1, batch: 900/937 completed....Accuracy: 0.0625
+Epoch number: 1
+
+Epoch: 1, batch: 0/937 completed....Accuracy: 0.15625
+Epoch: 1, batch: 100/937 completed....Accuracy: 0.140625
+Epoch: 1, batch: 200/937 completed....Accuracy: 0.15625
+Epoch: 1, batch: 300/937 completed....Accuracy: 0.125
+/home/hiran/Desktop/DL/model.py:186: RuntimeWarning: overflow encountered in divide
+  self.v_b[i] = (self.beta2*self.v_b[i] + (1-self.beta2)*db[i]*db[i])/(1 - np.power(self.beta2, self.t) + 1e-8)
+/home/hiran/Desktop/DL/model.py:187: RuntimeWarning: overflow encountered in divide
+
+Epoch: 1, batch: 400/937 completed....Accuracy: 0.046875
+Epoch: 1, batch: 500/937 completed....Accuracy: 0.125
+Epoch: 1, batch: 600/937 completed....Accuracy: 0.078125
+Epoch: 1, batch: 700/937 completed....Accuracy: 0.125
+Epoch: 1, batch: 800/937 completed....Accuracy: 0.15625
+Epoch: 1, batch: 900/937 completed....Accuracy: 0.046875
+Epoch number: 1
+
+Epoch: 1, batch: 0/937 completed....Accuracy: 0.15625
+Epoch: 1, batch: 100/937 completed....Accuracy: 0.140625
+Epoch: 1, batch: 200/937 completed....Accuracy: 0.15625
+Epoch: 1, batch: 300/937 completed....Accuracy: 0.125
+/home/hiran/Desktop/DL/model.py:187: RuntimeWarning: overflow encountered in divide
+
+/home/hiran/Desktop/DL/model.py:186: RuntimeWarning: overflow encountered in divide
+  self.v_b[i] = (self.beta2*self.v_b[i] + (1-self.beta2)*db[i]*db[i])/(1 - np.power(self.beta2, self.t) + 1e-8)
+Epoch: 1, batch: 400/937 completed....Accuracy: 0.046875
+Epoch: 1, batch: 500/937 completed....Accuracy: 0.125
+Epoch: 1, batch: 600/937 completed....Accuracy: 0.078125
+Epoch: 1, batch: 700/937 completed....Accuracy: 0.125
+Epoch: 1, batch: 800/937 completed....Accuracy: 0.15625
+Epoch: 1, batch: 900/937 completed....Accuracy: 0.046875

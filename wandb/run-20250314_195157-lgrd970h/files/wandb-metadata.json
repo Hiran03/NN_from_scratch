@@ -1,0 +1,42 @@
+{
+  "os": "Linux-5.15.0-134-generic-x86_64-with-glibc2.35",
+  "python": "CPython 3.10.12",
+  "startedAt": "2025-03-14T14:21:57.066562Z",
+  "program": "/home/hiran/Desktop/DL/compilation.ipynb",
+  "codePath": "compilation.ipynb",
+  "git": {
+    "remote": "https://github.com/Hiran03/NN_from_scratch.git",
+    "commit": "1c3c2686e4a65fb807d0dbc0fc912a0161120458"
+  },
+  "email": "mm21b030@smail.iitm.ac.in",
+  "root": "/home/hiran/Desktop/DL",
+  "host": "hiran-IdeaPad-Gaming-3-16IAH7",
+  "executable": "/home/hiran/Desktop/DL/.venv/bin/python",
+  "codePathLocal": "compilation.ipynb",
+  "cpu_count": 14,
+  "cpu_count_logical": 20,
+  "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+  "gpu_count": 1,
+  "disk": {
+    "/": {
+      "total": "140775047168",
+      "used": "53906456576"
+    }
+  },
+  "memory": {
+    "total": "16475017216"
+  },
+  "cpu": {
+    "count": 14,
+    "countLogical": 20
+  },
+  "gpu_nvidia": [
+    {
+      "name": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "memoryTotal": "6442450944",
+      "cudaCores": 3840,
+      "architecture": "Ampere"
+    }
+  ],
+  "cudaVersion": "12.4"
+}

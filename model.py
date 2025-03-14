@@ -194,11 +194,14 @@ class Model:
         
     def train(self, X, y, epochs, batch_size):
         """Train the model."""
-        X = self.fit_transform(X)
+        X = np.array([x.reshape(-1, 1) for x in X])
         self.initialize_weights(X[0].shape[0], y.shape[1])
         self.initialize_biases(y.shape[1])
         num_batches = X.shape[0]//batch_size
-        
+        print("Weights")
+        print([self.weights[i].shape for i in range(len(self.weights))])
+        print("dw")
+        print([self.dw[i].shape for i in range(len(self.dw))])
         for epoch in range(epochs):
             print(f"Epoch number: {epoch + 1}\n")
             for start_index in range(0, X.shape[0], batch_size) :
@@ -231,9 +234,9 @@ class Model:
                 
     def predict(self, X):
         """Make predictions on new data."""
-        X_transformed = self.transform(X)
+        X = np.array([x.reshape(-1, 1) for x in X])
         output = []
-        for X_i in X_transformed: 
+        for X_i in X: 
             self.forward(X_i)
             output.append(self.neuron_outputs[-1]) 
         return output
