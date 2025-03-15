@@ -198,10 +198,7 @@ class Model:
         self.initialize_weights(X[0].shape[0], y.shape[1])
         self.initialize_biases(y.shape[1])
         num_batches = X.shape[0]//batch_size
-        print("Weights")
-        print([self.weights[i].shape for i in range(len(self.weights))])
-        print("dw")
-        print([self.dw[i].shape for i in range(len(self.dw))])
+
         for epoch in range(epochs):
             print(f"Epoch number: {epoch + 1}\n")
             for start_index in range(0, X.shape[0], batch_size) :
