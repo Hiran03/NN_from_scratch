@@ -9,6 +9,7 @@ with open(CONFIG_FILE, "r") as f:
 
 # Construct the sweep_config dictionary using values from config.json
 sweep_config = {
+    "name": config["name"],
     "method": "grid",  # You can change to "random" or "bayes" if needed
     "metric": {"name": "accuracy", "goal": "maximize"},
     "parameters": {
@@ -23,6 +24,7 @@ sweep_config = {
         "activation_functions": {"values": config["activation_functions"]}
     }
 }
+print(sweep_config)
 import wandb
 sweep_id = wandb.sweep(sweep_config, project="DL")
 import importlib
@@ -44,6 +46,7 @@ y_test = np.array([each_y.reshape(-1, 1) for each_y in y_test])
 def train():
     run = wandb.init(project="DL")  # Initialize first
 
+    print(wandb.config)
     # Now safely access wandb.config parameters
     run_name = f"hl_{run.config.num_hidden_layers}_hs_{run.config.hidden_layer_size}_bs_{run.config.batch_size}_ac_{run.config.activation_functions}_wd_{run.config.weight_decay}_lr_{run.config.learning_rate}_opt_{run.config.optimizer}_wi_{run.config.weight_initialization}_ep_{run.config.epochs}"
     run.name = run_name  # Set the dynamically generated name

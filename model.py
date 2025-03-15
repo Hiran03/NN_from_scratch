@@ -15,28 +15,29 @@ class Model:
         self.beta = 0.9
         self.beta1 = 0.9
         self.beta2 = 0.999
+        self.epsilon = 1e-4
         self.t = 1
         
     def initialize_weights(self, input_size, output_size = 10):
         """Initialize weights based on weight_init strategy."""
         self.weights = []
-        self.neuron_outputs = [np.zeros((input_size,1))]
+        self.neuron_outputs = [np.zeros((input_size,1), dtype=np.float64)]
         self.dw = [] 
-        self.error = [np.zeros((input_size,1))]
+        self.error = [np.zeros((input_size,1), dtype=np.float64)]
         
         if self.weight_init == 'random':
             prev_layer = input_size
             for i in range(self.num_hidden_layers):
-                self.weights.append(np.random.randn(prev_layer, self.hidden_layer_size[i])*0.01)  
-                self.neuron_outputs.append(np.zeros((self.hidden_layer_size[i],1)))
-                self.error.append(np.zeros((self.hidden_layer_size[i],1)))
+                self.weights.append(np.random.randn(prev_layer, self.hidden_layer_size[i]))  
+                self.neuron_outputs.append(np.zeros((self.hidden_layer_size[i],1), dtype=np.float64))
+                self.error.append(np.zeros((self.hidden_layer_size[i],1), dtype=np.float64))
                 self.dw.append(np.zeros_like(self.weights[-1]))
                 
                 prev_layer = self.hidden_layer_size[i]
                 
             self.weights.append(np.random.randn(prev_layer, output_size)*0.01)
-            self.neuron_outputs.append(np.zeros((output_size,1)))
-            self.error.append(np.zeros((output_size,1)))
+            self.neuron_outputs.append(np.zeros((output_size,1), dtype=np.float64))
+            self.error.append(np.zeros((output_size,1), dtype=np.float64))
             self.dw.append(np.zeros_like(self.weights[-1])) 
             
         if self.weight_init == 'xavier':
@@ -44,25 +45,27 @@ class Model:
             for i in range(self.num_hidden_layers):
                 std = np.sqrt(2 / (prev_layer + self.hidden_layer_size[i]))  # Xavier Initialization
                 self.weights.append(np.random.normal(0, std, (prev_layer, self.hidden_layer_size[i])))  
-                self.neuron_outputs.append(np.zeros((self.hidden_layer_size[i],1)))
-                self.error.append(np.zeros((self.hidden_layer_size[i],1)))
+                self.neuron_outputs.append(np.zeros((self.hidden_layer_size[i],1), dtype=np.float64))
+                self.error.append(np.zeros((self.hidden_layer_size[i],1), dtype=np.float64))
                 self.dw.append(np.zeros_like(self.weights[-1]))
                 
                 prev_layer = self.hidden_layer_size[i]
                 
             std = np.sqrt(2 / (prev_layer + output_size))  # Xavier Initialization
             self.weights.append(np.random.normal(0, std, (prev_layer, output_size)))
-            self.neuron_outputs.append(np.zeros((output_size,1)))
-            self.error.append(np.zeros((output_size,1)))
+            self.neuron_outputs.append(np.zeros((output_size,1), dtype=np.float64))
+            self.error.append(np.zeros((output_size,1), dtype=np.float64))
             self.dw.append(np.zeros_like(self.weights[-1]))
-            
+        else:
+            raise ValueError("Choose one of 'random' or 'xavier' for weight init")
+
         self.u_w = [np.zeros_like(w) for w in self.weights]
         self.v_w = [np.zeros_like(w) for w in self.weights]
             
     def initialize_biases(self, output_size = 10):
         """Initialize biases to zeros."""
-        self.biases = [np.zeros((size, 1)) for size in self.hidden_layer_size]
-        self.biases.append(np.zeros((output_size, 1)))
+        self.biases = [np.zeros((size, 1), dtype=np.float64) for size in self.hidden_layer_size]
+        self.biases.append(np.zeros((output_size, 1), dtype=np.float64))
         self.db = [np.zeros_like(b) for b in self.biases]
         self.u_b = [np.zeros_like(b) for b in self.biases]
         self.v_b = [np.zeros_like(b) for b in self.biases]
@@ -70,15 +73,20 @@ class Model:
     def activation_function(self, x):
         """Apply activation function."""
         if self.activation == 'sigmoid':
+            x = np.clip(x, -500, 500) 
             return 1 / (1 + np.exp(-x))
         if self.activation == 'tanh':
+            x = np.clip(x, -500, 500) 
             return (np.exp(x) - np.exp(-x)) / (np.exp(x) + np.exp(-x))
         if self.activation == 'relu':
             return np.maximum(0,x)
+        else:
+            raise ValueError("Choose one of 'sigmoid' or 'relu' or 'tanh' for activations")
 
     def activation_derivative(self, x):
         """Compute the derivative for backpropagation."""
         if self.activation == "sigmoid":
+            x = np.clip(x, -500, 500)
             sig_x = 1 / (1 + np.exp(-x))  # Compute sigmoid directly
             return sig_x * (1 - sig_x)  
 
@@ -86,6 +94,7 @@ class Model:
             return np.where(x > 0, 1, 0)  
 
         elif self.activation == "tanh":
+            x = np.clip(x, -500, 500)
             tanh_x = np.tanh(x)  # Compute tanh directly
             return 1 - tanh_x ** 2  
         
@@ -147,7 +156,6 @@ class Model:
                 self.u_w[i] = self.beta*self.u_w[i] + (dw[i] + self.weight_decay * self.weights[i])
                 self.u_b[i] = self.beta*self.u_b[i] + db[i]
             
-            for i in range(len(self.weights)): 
                 self.weights[i] = self.weights[i] - self.learning_rate * self.u_w[i]
                 self.biases[i] = self.biases[i] - self.learning_rate * self.u_b[i]
             
@@ -159,19 +167,18 @@ class Model:
                 
             dw = [np.zeros_like(w) for w in self.weights]  # Create zero arrays matching the shape of gradients
             db = [np.zeros_like(b) for b in self.biases]
-            
+            batch_size = X.shape[0]
             for X_i, y_i in zip(X, y):  
                 dW_curr, dB_curr = self.gradients(X_i, y_i)  # Get gradients
                 # Accumulate gradients for each layer
                 for i in range(len(dw)):
-                    dw[i] += dW_curr[i]
-                    db[i] += dB_curr[i]
+                    dw[i] += dW_curr[i]/batch_size
+                    db[i] += dB_curr[i]/batch_size
 
             for i in range(len(self.weights)) :
                 self.u_w[i] = self.beta*self.u_w[i] + (dw[i] + self.weight_decay * self.weights[i])
                 self.u_b[i] = self.beta*self.u_b[i] + db[i]
-            
-            for i in range(len(self.weights)): 
+
                 self.weights[i] = self.weights[i] - self.learning_rate * self.u_w[i]
                 self.biases[i] = self.biases[i] - self.learning_rate * self.u_b[i]
                 
@@ -179,28 +186,47 @@ class Model:
             for i in range(len(self.weights)) :
                 self.v_w[i] = self.beta*self.v_w[i] + (1-self.beta)*dw[i]*dw[i]
                 self.v_b[i] = self.beta*self.v_b[i] + (1-self.beta)*db[i]*db[i]
-            
-            for i in range(len(self.weights)): 
+
                 self.weights[i] = self.weights[i] - self.learning_rate * (dw[i] + self.weight_decay * self.weights[i]) / (np.sqrt(self.v_w[i] + np.full_like(self.v_w[i],10e-8)))
                 self.biases[i] = self.biases[i] - self.learning_rate  * db[i] / (np.sqrt(self.v_b[i] + np.full_like(self.v_b[i],10e-8)))
             
         if self.optimizer == 'Adam':
-            for i in range(len(self.weights)) :
-                self.u_w[i] = (self.beta1*self.u_w[i] + (1-self.beta1)*(dw[i] + self.weight_decay * self.weights[i]))/(1 - np.power(self.beta1, self.t) + 1e-8)
-                self.u_b[i] = (self.beta1*self.u_b[i] + (1-self.beta1)*db[i])/(1 - np.power(self.beta1, self.t) + 1e-8)
+            self.t += 1  
+            for i in range(len(self.weights)):
+                self.u_w[i] = self.beta1 * self.u_w[i] + (1 - self.beta1) * (dw[i] + self.weight_decay * self.weights[i])
+                self.u_b[i] = self.beta1 * self.u_b[i] + (1 - self.beta1) * db[i]
             
-            for i in range(len(self.weights)) :
-                self.v_w[i] = (self.beta2*self.v_w[i] + (1-self.beta2)*dw[i]*dw[i])/(1 - np.power(self.beta2, self.t) + 1e-8)
-                self.v_b[i] = (self.beta2*self.v_b[i] + (1-self.beta2)*db[i]*db[i])/(1 - np.power(self.beta2, self.t) + 1e-8)
-                
-            for i in range(len(self.weights)): 
-                self.weights[i] = self.weights[i] - self.learning_rate * self.u_w[i] / (np.sqrt(self.v_w[i] + np.full_like(self.v_w[i],10e-8)))
-                self.biases[i] = self.biases[i] - self.learning_rate  * self.u_b[i] / (np.sqrt(self.v_b[i] + np.full_like(self.v_b[i],10e-8)))
-                
-            self.t += 1
+                self.v_w[i] = self.beta2 * self.v_w[i] + (1 - self.beta2) * (dw[i] ** 2)
+                self.v_b[i] = self.beta2 * self.v_b[i] + (1 - self.beta2) * (db[i] ** 2)
+            
+                # Bias correction
+                u_w_corrected = self.u_w[i] / (1 - np.power(self.beta1, self.t))
+                u_b_corrected = self.u_b[i] / (1 - np.power(self.beta1, self.t))
+                v_w_corrected = self.v_w[i] / (1 - np.power(self.beta2, self.t))
+                v_b_corrected = self.v_b[i] / (1 - np.power(self.beta2, self.t))
+
+                self.weights[i] -= self.learning_rate * u_w_corrected / (np.sqrt(v_w_corrected) + self.epsilon)
+                self.biases[i] -= self.learning_rate * u_b_corrected / (np.sqrt(v_b_corrected) + self.epsilon)
+
+        else:
+            raise ValueError("Choose one of 'SGD' or 'momentum' or 'RMSprop' or 'nesterov' or 'Adam' for optimizer")
         
     def train(self, X, y, epochs, batch_size):
         """Train the model."""
+        # Check if X and y are numpy arrays
+        if not isinstance(X, np.ndarray) or not isinstance(y, np.ndarray):
+            raise TypeError("X and y must be NumPy arrays")
+        
+        # Check if X and y have the correct shape
+        if X.ndim != 3 or y.ndim != 3:
+            raise ValueError("X and y must have three dimensions: (num_samples, input_size, 1) for X and (num_samples, output_size, 1) for y")
+        
+        if X.shape[0] != y.shape[0]:
+            raise ValueError("X and y must have the same number of samples")
+        
+        # Check if batch size is valid
+        if batch_size > X.shape[0] or batch_size <= 0:
+            raise ValueError("batch_size must be greater than 0 and less than or equal to the number of data points")
         
         self.initialize_weights(X[0].shape[0], y.shape[1])
         self.initialize_biases(y.shape[1])

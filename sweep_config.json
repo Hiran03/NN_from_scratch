@@ -1,11 +1,12 @@
 {
-    "epochs": [2],
+    "name": "1st set of experiments",
+    "epochs": [5],
     "num_hidden_layers": [3],
-    "hidden_layer_size": [32, 64],
-    "weight_decay": [0, 0.5],
+    "hidden_layer_size": [32],
+    "weight_decay": [0.5, 0.0005],
     "learning_rate": [0.001, 0.0001],
-    "optimizer": ["adam"],
+    "optimizer": ["Adam", "RMSprop", "nesterov"],
     "batch_size": [64],
     "weight_initialization": ["xavier"],
-    "activation_functions": ["sigmoid"]
+    "activation_functions": ["sigmoid", "tanh"]
 }
