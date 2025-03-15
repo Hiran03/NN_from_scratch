@@ -31,7 +31,9 @@ class Model:
                 self.neuron_outputs.append(np.zeros((self.hidden_layer_size[i],1)))
                 self.error.append(np.zeros((self.hidden_layer_size[i],1)))
                 self.dw.append(np.zeros_like(self.weights[-1]))
+                
                 prev_layer = self.hidden_layer_size[i]
+                
             self.weights.append(np.random.randn(prev_layer, output_size)*0.01)
             self.neuron_outputs.append(np.zeros((output_size,1)))
             self.error.append(np.zeros((output_size,1)))
@@ -45,7 +47,9 @@ class Model:
                 self.neuron_outputs.append(np.zeros((self.hidden_layer_size[i],1)))
                 self.error.append(np.zeros((self.hidden_layer_size[i],1)))
                 self.dw.append(np.zeros_like(self.weights[-1]))
+                
                 prev_layer = self.hidden_layer_size[i]
+                
             std = np.sqrt(2 / (prev_layer + output_size))  # Xavier Initialization
             self.weights.append(np.random.normal(0, std, (prev_layer, output_size)))
             self.neuron_outputs.append(np.zeros((output_size,1)))
@@ -85,6 +89,10 @@ class Model:
             tanh_x = np.tanh(x)  # Compute tanh directly
             return 1 - tanh_x ** 2  
         
+    def softmax(self, x):
+        expx = np.exp(x - np.max(x))
+        return expx / np.sum(expx) 
+    
     def fit_transform(self, X):
         """ Normalising X"""
         X = np.array([x.reshape(-1, 1) for x in X])
@@ -94,7 +102,7 @@ class Model:
         return X
         
     def transform(self, X):
-        """Normalising X"""
+        """Normalizing X"""
         X = np.array([x.reshape(-1, 1) for x in X])
         X = np.array([(x - self.X_u) / (self.X_sigma + 1e-8) for x in X ])
         return X
@@ -106,8 +114,7 @@ class Model:
             self.neuron_outputs[i + 1] = self.activation_function(np.dot(self.weights[i].T, self.neuron_outputs[i]) + self.biases[i])
         
         self.neuron_outputs[-1] = np.dot(self.weights[-1].T, self.neuron_outputs[-2]) + self.biases[-1]
-        exps = np.exp(self.neuron_outputs[-1] - np.max(self.neuron_outputs[-1]))  # Subtract max for stability
-        self.neuron_outputs[-1] = exps / np.sum(exps)  # Normalize
+        self.neuron_outputs[-1] = self.softmax(self.neuron_outputs[-1])
 
     def backward(self, true_output):
         """Backward pass through the network."""
@@ -194,7 +201,7 @@ class Model:
         
     def train(self, X, y, epochs, batch_size):
         """Train the model."""
-        X = np.array([x.reshape(-1, 1) for x in X])
+        
         self.initialize_weights(X[0].shape[0], y.shape[1])
         self.initialize_biases(y.shape[1])
         num_batches = X.shape[0]//batch_size
@@ -211,9 +218,9 @@ class Model:
                     dW_curr, dB_curr = self.gradients(X_i, y_i)  # Get gradients
                     # Accumulate gradients for each layer
                     for i in range(len(dw)):
-                        dw[i] += dW_curr[i]
-                        db[i] += dB_curr[i]
-                
+                        dw[i] += dW_curr[i]/batch_size
+                        db[i] += dB_curr[i]/batch_size
+                        
                 self.update_weights(dw, db, X_batch, y_batch)  # Update model parameters
                 
                 # Logging the training loss
@@ -231,9 +238,8 @@ class Model:
                 
     def predict(self, X):
         """Make predictions on new data."""
-        X = np.array([x.reshape(-1, 1) for x in X])
         output = []
         for X_i in X: 
             self.forward(X_i)
             output.append(self.neuron_outputs[-1]) 
-        return output
+        return np.array(output)
