@@ -96,14 +96,14 @@ loaded_model = loaded_model.reload("test_model")
 
 ## Hyperparameter Tuning with WandB
 
-# Running Sweeps
 
-## A. Running a Sweep using `sweep.py`
 
-### 1. Configure the Sweep
+### A. Running a Sweep using `sweep.py`
+
+#### 1. Configure the Sweep
 Modify `sweep_config.json` to specify the hyperparameters for tuning.
 
-### 2. Run the Sweep
+#### 2. Run the Sweep
 ```bash
 python sweep.py
 ```
@@ -111,11 +111,11 @@ This will initialize and run the hyperparameter tuning process using Weights & B
 
 ---
 
-## B. Running `train.py` from Command Line
+### B. Running `train.py` from Command Line
 
 To train the model manually, use `train.py` with the following command-line arguments.
 
-### Accepted Arguments
+#### Accepted Arguments
 The table below describes the available arguments, their accepted values, and default settings:
 
 | Tag | Argument | Accepted Values | Default |
@@ -139,7 +139,7 @@ The table below describes the available arguments, their accepted values, and de
 | `-sz` | `--hidden_size` | Any integer | `128` |
 | `-a` | `--activation` | `sigmoid`, `tanh`, `relu` | `tanh` |
 
-### Example Usage
+#### Example Usage
 Run training with custom parameters:
 ```bash
 python train.py -e 20 -b 64 -lr 0.0005 -o Adam -a relu
