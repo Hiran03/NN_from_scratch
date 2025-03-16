@@ -1,7 +1,10 @@
 # This file contains the code for forward pass and backpropogation, activation functions
 import numpy as np
+import os
+import json
+import pickle
 class Model:
-    def __init__(self, num_hidden_layers, hidden_layer_size, weight_decay, learning_rate, optimizer, activation, weight_init, loss):
+    def __init__(self, num_hidden_layers=3, hidden_layer_size=128, weight_decay=0.0005, learning_rate=0.001, optimizer='RMSprop', activation='tanh', weight_init='xavier', loss='cross-entropy', beta=0.9, beta1 =0.9, beta2=0.999, epsilon=1e-6):
         # Initialize parameters
         self.num_hidden_layers = num_hidden_layers
         self.hidden_layer_size = hidden_layer_size
@@ -12,10 +15,10 @@ class Model:
         self.weight_init = weight_init
         self.loss = loss
         self.training_loss = []
-        self.beta = 0.9
-        self.beta1 = 0.9
-        self.beta2 = 0.999
-        self.epsilon = 1e-4
+        self.beta = beta
+        self.beta1 = beta1
+        self.beta2 = beta2
+        self.epsilon = epsilon 
         self.t = 1
         
     def initialize_weights(self, input_size, output_size = 10):
@@ -40,7 +43,7 @@ class Model:
             self.error.append(np.zeros((output_size,1), dtype=np.float64))
             self.dw.append(np.zeros_like(self.weights[-1])) 
             
-        if self.weight_init == 'xavier':
+        elif self.weight_init == 'xavier':
             prev_layer = input_size
             for i in range(self.num_hidden_layers):
                 std = np.sqrt(2 / (prev_layer + self.hidden_layer_size[i]))  # Xavier Initialization
@@ -75,10 +78,10 @@ class Model:
         if self.activation == 'sigmoid':
             x = np.clip(x, -500, 500) 
             return 1 / (1 + np.exp(-x))
-        if self.activation == 'tanh':
+        elif self.activation == 'tanh':
             x = np.clip(x, -500, 500) 
             return (np.exp(x) - np.exp(-x)) / (np.exp(x) + np.exp(-x))
-        if self.activation == 'relu':
+        elif self.activation == 'relu':
             return np.maximum(0,x)
         else:
             raise ValueError("Choose one of 'sigmoid' or 'relu' or 'tanh' for activations")
@@ -130,7 +133,10 @@ class Model:
         if self.loss == 'cross-entropy' :
             self.error[-1] = self.neuron_outputs[-1] - true_output
         elif self.loss == 'MSE' :
-            self.error[-1] = -true_output + self.neuron_outputs[-1]
+            self.error[-1] = (-true_output + self.neuron_outputs[-1]) * self.activation_derivative(self.neuron_outputs[-1])
+        else:
+            raise ValueError("Choose one of 'cross-entropy' or 'MSE' for loss")
+        
         for i in range(len(self.error) - 2, 0, -1) :
             self.error[i] = np.dot(self.weights[i], self.error[i + 1]) * self.activation_derivative(self.neuron_outputs[i])
     
@@ -151,7 +157,7 @@ class Model:
                 self.weights[i] = self.weights[i] - self.learning_rate * (dw[i] + self.weight_decay * self.weights[i])
                 self.biases[i] = self.biases[i] - self.learning_rate * db[i]
                 
-        if self.optimizer == 'momentum':
+        elif self.optimizer == 'momentum':
             for i in range(len(self.weights)) :
                 self.u_w[i] = self.beta*self.u_w[i] + (dw[i] + self.weight_decay * self.weights[i])
                 self.u_b[i] = self.beta*self.u_b[i] + db[i]
@@ -159,7 +165,7 @@ class Model:
                 self.weights[i] = self.weights[i] - self.learning_rate * self.u_w[i]
                 self.biases[i] = self.biases[i] - self.learning_rate * self.u_b[i]
             
-        if self.optimizer == 'nesterov':
+        elif self.optimizer == 'nesterov':
             # Look first
             for i in range(len(self.weights)): 
                 self.weights[i] = self.weights[i] - self.beta * self.u_w[i]
@@ -182,7 +188,7 @@ class Model:
                 self.weights[i] = self.weights[i] - self.learning_rate * self.u_w[i]
                 self.biases[i] = self.biases[i] - self.learning_rate * self.u_b[i]
                 
-        if self.optimizer == 'RMSprop':   
+        elif self.optimizer == 'RMSprop':   
             for i in range(len(self.weights)) :
                 self.v_w[i] = self.beta*self.v_w[i] + (1-self.beta)*dw[i]*dw[i]
                 self.v_b[i] = self.beta*self.v_b[i] + (1-self.beta)*db[i]*db[i]
@@ -190,7 +196,7 @@ class Model:
                 self.weights[i] = self.weights[i] - self.learning_rate * (dw[i] + self.weight_decay * self.weights[i]) / (np.sqrt(self.v_w[i] + np.full_like(self.v_w[i],10e-8)))
                 self.biases[i] = self.biases[i] - self.learning_rate  * db[i] / (np.sqrt(self.v_b[i] + np.full_like(self.v_b[i],10e-8)))
             
-        if self.optimizer == 'Adam':
+        elif self.optimizer == 'Adam':
             self.t += 1  
             for i in range(len(self.weights)):
                 self.u_w[i] = self.beta1 * self.u_w[i] + (1 - self.beta1) * (dw[i] + self.weight_decay * self.weights[i])
@@ -269,3 +275,71 @@ class Model:
             self.forward(X_i)
             output.append(self.neuron_outputs[-1]) 
         return np.array(output)
+
+
+    def save(self, filename):
+        """Save model parameters and weights/biases."""
+        model_data = {
+            "num_hidden_layers": self.num_hidden_layers,
+            "hidden_layer_size": self.hidden_layer_size,
+            "weight_decay": self.weight_decay,
+            "learning_rate": self.learning_rate,
+            "optimizer": self.optimizer,
+            "activation": self.activation,
+            "weight_init": self.weight_init,
+            "loss": self.loss,
+            "beta": self.beta,
+            "beta1": self.beta1,
+            "beta2": self.beta2,
+            "epsilon": self.epsilon,
+            "input_size": self.neuron_outputs[0].shape[0],
+            "output_size": self.neuron_outputs[-1].shape[0]
+        }
+
+        # Save hyperparameters as JSON
+        with open(f"{filename}_config.json", "w") as f:
+            json.dump(model_data, f)
+
+        # Save weights and biases using pickle
+        with open(f"{filename}_weights_biases.pkl", "wb") as f:
+            pickle.dump({"weights": self.weights, "biases": self.biases}, f)
+
+    def load_model(self, filename):
+        """Load model parameters and weights/biases."""
+        # Load hyperparameters
+        with open(f"{filename}_config.json", "r") as f:
+            model_data = json.load(f)
+
+        # Create a new model instance with loaded hyperparameters
+        model = Model(
+            num_hidden_layers = model_data["num_hidden_layers"],
+            hidden_layer_size = model_data["hidden_layer_size"],
+            weight_decay = model_data["weight_decay"],
+            learning_rate = model_data["learning_rate"],
+            optimizer = model_data["optimizer"],
+            activation = model_data["activation"],
+            weight_init = model_data["weight_init"],
+            loss = model_data["loss"],
+            beta = model_data["beta"],
+            beta1 = model_data["beta1"],
+            beta2 = model_data["beta2"],
+            epsilon = model_data["epsilon"]
+
+        )
+        
+        input_size = model_data["input_size"]
+        output_size = model_data["output_size"]
+
+        # Initialize weights and biases
+        model.initialize_weights(input_size, output_size)
+        model.initialize_biases(output_size)
+
+        # Load weights and biases
+        with open(f"{filename}_weights_biases.pkl", "rb") as f:
+            data = pickle.load(f)
+            model.weights = data["weights"]
+            model.biases = data["biases"]
+
+        return model
+
+        

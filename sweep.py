@@ -1,6 +1,12 @@
 import json
 import numpy as np
 from keras.datasets import fashion_mnist
+import wandb
+import importlib
+import model  # Ensure model.py is imported
+importlib.reload(model)  # Reload the module
+from model import Model  # Import the class
+import numpy as np
 
 # Load the config.json file
 CONFIG_FILE = "sweep_config.json"
@@ -24,29 +30,37 @@ sweep_config = {
         "activation_functions": {"values": config["activation_functions"]}
     }
 }
-print(sweep_config)
-import wandb
+
+
 sweep_id = wandb.sweep(sweep_config, project="DL")
-import importlib
-import model  # Ensure model.py is imported
-importlib.reload(model)  # Reload the module
-from model import Model  # Import the class
-# Load dataset
+
+
 (X_train, y_train), (X_test, y_test) = fashion_mnist.load_data()
+
 X_train = X_train/255.0
-X_test = X_test/255.0
-# One-hot encode labels
-num_classes = int(np.max(y_train)) + 1  
-y_train = np.eye(num_classes)[y_train.astype(int)]
+X_train = np.array([x.reshape(-1, 1) for x in X_train])
+
+num_classes = int(np.max(y_train)) + 1  # Convert to int
+
+y_train = np.eye(num_classes)[y_train.astype(int)]  # Ensure indices are integers
 y_train = np.array([each_y.reshape(-1, 1) for each_y in y_train])
 
-y_test = np.eye(num_classes)[y_test.astype(int)]
-y_test = np.array([each_y.reshape(-1, 1) for each_y in y_test])
+val_ratio = 0.1
+num_samples = X_train.shape[0]
+num_val = int(num_samples * val_ratio)
+
+indices = np.arange(num_samples)
+np.random.seed(42)  # For reproducibility
+np.random.shuffle(indices)
+
+# Split the dataset
+X_val, y_val = X_train[indices[:num_val]], y_train[indices[:num_val]]
+X_train, y_train = X_train[indices[num_val:]], y_train[indices[num_val:]]
+
 
 def train():
     run = wandb.init(project="DL")  # Initialize first
 
-    print(wandb.config)
     # Now safely access wandb.config parameters
     run_name = f"hl_{run.config.num_hidden_layers}_hs_{run.config.hidden_layer_size}_bs_{run.config.batch_size}_ac_{run.config.activation_functions}_wd_{run.config.weight_decay}_lr_{run.config.learning_rate}_opt_{run.config.optimizer}_wi_{run.config.weight_initialization}_ep_{run.config.epochs}"
     run.name = run_name  # Set the dynamically generated name
@@ -68,11 +82,10 @@ def train():
     model.train(X_train, y_train, config.epochs, config.batch_size)
 
     # Get predictions
-    predictions = model.predict(X_test)
-    predicted_classes = np.argmax(predictions, axis=1)
+    y_hat = model.predict(X_val)
 
     # Compute accuracy
-    accuracy = np.mean(predicted_classes == np.argmax(y_test, axis=1))
+    accuracy  = np.mean(np.argmax(y_hat, axis=1) == np.argmax(y_val, axis=1))
 
     # Log metrics
     wandb.log({"accuracy": accuracy})

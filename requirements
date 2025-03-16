@@ -2,3 +2,6 @@ numpy
 keras
 tensorflow
 wandb
+matplotlib
+seaborn
+scikit-learn
