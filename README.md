@@ -2,10 +2,6 @@
 
 This repository contains a custom-built **Artificial Neural Network (ANN)** module implemented from scratch. The model supports various optimizers, activation functions, weight initialization techniques, and hyperparameter tuning using **Weights & Biases (WandB)**.
 
-Follow compilation.ipynb for grading
-
-wandb report can be found at https://api.wandb.ai/links/mm21b030-indian-institute-of-technology-madras/94rs04sq
-
 ## Installation
 
 Before running the project, install the required dependencies:
