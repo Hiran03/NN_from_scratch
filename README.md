@@ -2,6 +2,10 @@
 
 This repository contains a custom-built **Artificial Neural Network (ANN)** module implemented from scratch. The model supports various optimizers, activation functions, weight initialization techniques, and hyperparameter tuning using **Weights & Biases (WandB)**.
 
+Follow compilation.ipynb for grading
+
+wandb report can be found at https://api.wandb.ai/links/mm21b030-indian-institute-of-technology-madras/94rs04sq
+
 ## Installation
 
 Before running the project, install the required dependencies:
@@ -92,19 +96,61 @@ loaded_model = loaded_model.reload("test_model")
 
 ## Hyperparameter Tuning with WandB
 
-### Running Sweeps
+# Running Sweeps
 
-#### 1. Configure the Sweep
+## A. Running a Sweep using `sweep.py`
 
+### 1. Configure the Sweep
 Modify `sweep_config.json` to specify the hyperparameters for tuning.
 
-#### 2. Run the sweep:
-
+### 2. Run the Sweep
 ```bash
 python sweep.py
 ```
+This will initialize and run the hyperparameter tuning process using Weights & Biases (W&B).
 
 ---
+
+## B. Running `train.py` from Command Line
+
+To train the model manually, use `train.py` with the following command-line arguments.
+
+### Accepted Arguments
+The table below describes the available arguments, their accepted values, and default settings:
+
+| Tag | Argument | Accepted Values | Default |
+|------|----------|----------------|---------|
+| `-wp` | `--wandb_project` | Any string | `DL` |
+| `-we` | `--wandb_entity` | Any string | `mm21b030-indian-institute-of-technology-madras` |
+| `-d` | `--dataset` | `mnist`, `fashion_mnist` | `fashion_mnist` |
+| `-e` | `--epochs` | Any integer | `10` |
+| `-b` | `--batch_size` | Any integer | `128` |
+| `-l` | `--loss` | `MSE`, `cross-entropy` | `cross-entropy` |
+| `-o` | `--optimizer` | `SGD`, `momentum`, `nesterov`, `RMSprop`, `Adam` | `RMSprop` |
+| `-lr` | `--learning_rate` | Any float | `0.001` |
+| `-m` | `--momentum` | Any float | `0` |
+| `-beta` | `--beta` | Any float | `0.9` |
+| `-beta1` | `--beta1` | Any float | `0.9` |
+| `-beta2` | `--beta2` | Any float | `0.999` |
+| `-eps` | `--epsilon` | Any float | `0.000001` |
+| `-w_d` | `--weight_decay` | Any float | `0.0005` |
+| `-w_i` | `--weight_init` | `random`, `xavier` | `xavier` |
+| `-nhl` | `--num_layers` | Any integer | `3` |
+| `-sz` | `--hidden_size` | Any integer | `128` |
+| `-a` | `--activation` | `sigmoid`, `tanh`, `relu` | `tanh` |
+
+### Example Usage
+Run training with custom parameters:
+```bash
+python train.py -e 20 -b 64 -lr 0.0005 -o Adam -a relu
+```
+This command sets epochs to 20, batch size to 64, learning rate to 0.0005, optimizer to Adam, and activation function to ReLU.
+
+For more details, use:
+```bash
+python train.py --help
+```
+
 
 ## Additional Files
 
