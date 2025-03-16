@@ -3,6 +3,7 @@ import numpy as np
 import os
 import json
 import pickle
+from activations import activation_function, activation_derivative, softmax
 class Model:
     def __init__(self, num_hidden_layers=3, hidden_layer_size=128, weight_decay=0.0005, learning_rate=0.001, optimizer='RMSprop', activation='tanh', weight_init='xavier', loss='cross-entropy', beta=0.9, beta1 =0.9, beta2=0.999, epsilon=1e-6):
         # Initialize parameters
@@ -72,38 +73,7 @@ class Model:
         self.db = [np.zeros_like(b) for b in self.biases]
         self.u_b = [np.zeros_like(b) for b in self.biases]
         self.v_b = [np.zeros_like(b) for b in self.biases]
-
-    def activation_function(self, x):
-        """Apply activation function."""
-        if self.activation == 'sigmoid':
-            x = np.clip(x, -500, 500) 
-            return 1 / (1 + np.exp(-x))
-        elif self.activation == 'tanh':
-            x = np.clip(x, -500, 500) 
-            return (np.exp(x) - np.exp(-x)) / (np.exp(x) + np.exp(-x))
-        elif self.activation == 'relu':
-            return np.maximum(0,x)
-        else:
-            raise ValueError("Choose one of 'sigmoid' or 'relu' or 'tanh' for activations")
-
-    def activation_derivative(self, x):
-        """Compute the derivative for backpropagation."""
-        if self.activation == "sigmoid":
-            x = np.clip(x, -500, 500)
-            sig_x = 1 / (1 + np.exp(-x))  # Compute sigmoid directly
-            return sig_x * (1 - sig_x)  
-
-        elif self.activation == "relu":
-            return np.where(x > 0, 1, 0)  
-
-        elif self.activation == "tanh":
-            x = np.clip(x, -500, 500)
-            tanh_x = np.tanh(x)  # Compute tanh directly
-            return 1 - tanh_x ** 2  
-        
-    def softmax(self, x):
-        expx = np.exp(x - np.max(x))
-        return expx / np.sum(expx) 
+        self.total_params = sum(arr.size for arr in self.weights) + sum(arr.size for arr in self.biases)    
     
     def fit_transform(self, X):
         """ Normalising X"""
@@ -123,22 +93,23 @@ class Model:
         """Forward pass through the network."""
         self.neuron_outputs[0] = x
         for i in range(self.num_hidden_layers):
-            self.neuron_outputs[i + 1] = self.activation_function(np.dot(self.weights[i].T, self.neuron_outputs[i]) + self.biases[i])
+            self.neuron_outputs[i + 1] = activation_function(self.activation, np.dot(self.weights[i].T, self.neuron_outputs[i]) + self.biases[i])
         
         self.neuron_outputs[-1] = np.dot(self.weights[-1].T, self.neuron_outputs[-2]) + self.biases[-1]
-        self.neuron_outputs[-1] = self.softmax(self.neuron_outputs[-1])
+        if (self.loss == 'cross-entropy') : #softmax is not applied when its is MSE 
+            self.neuron_outputs[-1] = softmax(self.neuron_outputs[-1])
 
     def backward(self, true_output):
         """Backward pass through the network."""
         if self.loss == 'cross-entropy' :
             self.error[-1] = self.neuron_outputs[-1] - true_output
         elif self.loss == 'MSE' :
-            self.error[-1] = (-true_output + self.neuron_outputs[-1]) * self.activation_derivative(self.neuron_outputs[-1])
+            self.error[-1] = (-true_output + self.neuron_outputs[-1]) 
         else:
             raise ValueError("Choose one of 'cross-entropy' or 'MSE' for loss")
         
         for i in range(len(self.error) - 2, 0, -1) :
-            self.error[i] = np.dot(self.weights[i], self.error[i + 1]) * self.activation_derivative(self.neuron_outputs[i])
+            self.error[i] = np.dot(self.weights[i], self.error[i + 1]) * activation_derivative(self.activation, self.neuron_outputs[i])
     
     def gradients(self, X, y):
         """Calculate gradients"""
@@ -236,6 +207,8 @@ class Model:
         
         self.initialize_weights(X[0].shape[0], y.shape[1])
         self.initialize_biases(y.shape[1])
+        print(f"Model with {self.total_params} parameters initialized...")
+        
         num_batches = X.shape[0]//batch_size
 
         for epoch in range(epochs):

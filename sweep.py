@@ -34,9 +34,14 @@ sweep_config = {
 
 sweep_id = wandb.sweep(sweep_config, project="DL")
 
-
-(X_train, y_train), (X_test, y_test) = fashion_mnist.load_data()
-
+if config["data"] == "fashion_mnist":
+    from keras.datasets import fashion_mnist
+    (X_train, y_train), (X_test, y_test) = fashion_mnist.load_data()
+    
+elif config["data"] == "mnist":
+    from keras.datasets import mnist 
+    (X_train, y_train), (X_test, y_test) = mnist.load_data()
+    
 X_train = X_train/255.0
 X_train = np.array([x.reshape(-1, 1) for x in X_train])
 

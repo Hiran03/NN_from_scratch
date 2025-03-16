@@ -1,12 +1,13 @@
 {
-    "name": "Trial set with prevbest model",
-    "epochs": [15],
+    "name": "test_experiments",
+    "data": "mnist",
+    "epochs": [10],
     "num_hidden_layers": [3],
     "hidden_layer_size": [128],
     "weight_decay": [0.0005],
     "learning_rate": [0.001],
-    "optimizer": ["Adam", "RMSprop"],
-    "batch_size": [64],
+    "optimizer": ["RMSprop"],
+    "batch_size": [32, 64, 128],
     "weight_initialization": ["xavier"],
     "activation_functions": ["tanh"]
 }
